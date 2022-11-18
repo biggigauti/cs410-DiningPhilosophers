@@ -1,13 +1,13 @@
 public class Chopstick {
     private int location;
-    private boolean occupied;
+    private boolean acquired;
 
     public Chopstick(int location) {
         this.location = location;
-        occupied = false;
+        acquired = false;
     }
 
-    public void setOccupied() {
+    public void acquire() {
         synchronized (this) {
             try {
                 if (!occupied) {
@@ -17,7 +17,7 @@ public class Chopstick {
         }
     }
 
-    public void setUnoccupied() {
+    public void release() {
         synchronized (this) {
             try {
                 if (occupied) {
