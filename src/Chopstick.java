@@ -9,21 +9,15 @@ public class Chopstick {
 
     public void acquire() {
         synchronized (this) {
-            try {
-                if (!occupied) {
-                    occupied = true;
-                }
-            } catch (Exception ignore) {}
+            if (!acquired) {
+                acquired = true;
+            }
         }
     }
 
     public void release() {
         synchronized (this) {
-            try {
-                if (occupied) {
-                    occupied = false;
-                }
-            } catch (Exception ignored) {}
+            acquired = false;
         }
     }
 }

@@ -2,6 +2,9 @@ import java.util.Random;
 
 public class Philosopher implements Runnable {
 
+    private volatile boolean timeToWork;
+    private volatile boolean eating;
+
     public enum State {
         //Three states a philosopher can have
         Thinking(getRandomInt()),
@@ -30,15 +33,18 @@ public class Philosopher implements Runnable {
     }
 
     private int seat;
-    private boolean thinking;
-    private boolean eating;
 
     private Thread thread;
 
-    public Philosopher(int seat) {
+    private State state;
+    private Chopstick rightChop;
+    private Chopstick leftChop;
+
+    public Philosopher(int seat, leftChop, rightChop) {
         this.seat = seat;
-        thinking = true;
-        eating = false;
+        state = State.Thinking;
+        this.rightChop = rightChop;
+        this.leftChop = leftChop;
     }
 
     public void startThread() {
@@ -49,8 +55,35 @@ public class Philosopher implements Runnable {
         return Math.random()*2000
     }
 
+    private void checkEat() {
+        //check left and right chopstick
+        //call eat functions
+        //careful of race conditions
+
+        //if available...eating = true
+    }
+
+    private void eat() {
+        state = State.Eating;
+        state.getNext();
+    }
+
+    //synchronize checkeat and eat?
+
     @Override
     public void run() {
-
+        synchronized(this) {
+            while (timeToWork) {
+                while (!eating) {
+                    try {
+                        checkEat();
+                        //wait();
+                    } catch (InterruptedException ignored) {}
+                }
+                eat();
+                eating = false;
+                notifyAll();
+            }
+        }
     }
 }
