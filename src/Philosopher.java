@@ -1,14 +1,15 @@
-import java.util.Random;
+//Class Description: This is the philosopher class that is in charge of the state that each
+//philosopher can be in, how long each state takes to complete, and the position of the
+//philosopher at the table.
 
 public class Philosopher implements Runnable {
 
-    private volatile boolean timeToWork;
     private volatile boolean eating;
 
     public enum State {
         //Three states a philosopher can have
         Thinking(getRandomInt()),
-        Hungry(),
+        Hungry(-1),
         Eating(getRandomInt());
 
         //Instance variables
@@ -32,58 +33,86 @@ public class Philosopher implements Runnable {
         }
     }
 
-    private int seat;
-
+    //Instance variables
     private Thread thread;
 
     private State state;
+
     private Chopstick rightChop;
     private Chopstick leftChop;
+    int threadNum;
 
-    public Philosopher(int seat, leftChop, rightChop) {
-        this.seat = seat;
+    /**
+     * Constructor for the Philosophers. Each philosopher gets an identifier (threadNum) and their left and right chopstick.
+     * @param threadNum
+     * @param leftChop
+     * @param rightChop
+     */
+    public Philosopher(int threadNum, Chopstick leftChop, Chopstick rightChop) {
+        this.threadNum = threadNum;
+        thread = new Thread(this, "Philosopher[" + threadNum + "]");
         state = State.Thinking;
         this.rightChop = rightChop;
         this.leftChop = leftChop;
     }
 
+    private volatile boolean timeToWork;
+
+    //Starts the threads when called.
     public void startThread() {
+        timeToWork = true;
+        System.out.println("Starting thread ["+threadNum+"]");
         thread.start();
     }
 
-    public int getRandomInt() {
-        return Math.random()*2000
+    //Stops the threads when called.
+    public void stopThread() {
+        timeToWork = false;
     }
 
-    private void checkEat() {
-        //check left and right chopstick
-        //call eat functions
-        //careful of race conditions
-
-        //if available...eating = true
+    /**
+     * The waitToStop() method runs thread.join() which waits for the threads to die before continuing.
+     */
+    public void waitToStop() {
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            System.err.println(thread.getName() + " stop malfunction");
+        }
     }
 
+    //Creates a random int by getting a random float from 0-1 out of the Math.random() function
+    //and then multiplying by 2000 to get an int.
+    public static int getRandomInt() {
+        return (int)(Math.random()*2000);
+    }
+
+    //Changes current state to eating then gets next stage.
     private void eat() {
         state = State.Eating;
+        System.out.println("Philosopher ["+threadNum+"] is currently eating...");
         state.getNext();
     }
 
-    //synchronize checkeat and eat?
-
+    //Run method for Philosophers. This code is executed when the threads start.
+    //Utilizes acquire and release
     @Override
     public void run() {
-        synchronized(this) {
-            while (timeToWork) {
-                while (!eating) {
-                    try {
-                        checkEat();
-                        //wait();
-                    } catch (InterruptedException ignored) {}
-                }
-                eat();
-                eating = false;
-                notifyAll();
-            }
+        //timeToWork turns on when threads start. Turn off when threads stop.
+        //The idea for the structure of this code was found on: https://www.javatpoint.com/dining-philosophers-problem-and-solution-in-java.
+        while (timeToWork) {
+            leftChop.acquire();
+            System.out.println("Philosopher ["+threadNum+"] grabs the left chopstick");
+            rightChop.acquire();
+            System.out.println("Philosopher ["+threadNum+"] grabs the right chopstick");
+
+            eat();
+
+            leftChop.release();
+            System.out.println("Philosopher ["+threadNum+"] releases the left chopstick");
+            rightChop.release();
+            System.out.println("Philosopher ["+threadNum+"] releases the right chopstick");
         }
     }
 }
+
